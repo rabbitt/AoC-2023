@@ -4,20 +4,97 @@ import argparse
 import os
 import re
 
-from pathlib import Path
 from collections import UserString
+from dataclasses import dataclass
+from pathlib import Path
+
+NUMBERS = {
+    "one": "1", "two": "2", "three": "3", 
+    "four": "4", "five": "5", "six": "6", 
+    "seven": "7", "eight": "8", "nine": "9"
+}
+
+@dataclass
+class WordRun:
+    '''
+    Represents a run of characters representing a number in word format. Can be 
+    initialized with data from a re.finditer match (span() and group() data) to
+    encapsulate a given word, and later check to see if other re.Match's overlap
+    with this Run.
+    '''
+    start: int = 0
+    end:   int = 0
+    word:  str = ''
+
+    def __post_init__(self):
+        self._number = NUMBERS[self.word]
+
+    def overlaps(self, other: 'Run') -> bool:
+        if self.start <= other.start:
+            if self.end >= other.start:
+                return True
+        else:
+            if other.end >= self.start:
+                return True     
+        return False
+    __contains__ = overlaps
+    
+    @property
+    def number(self) -> str:
+        return self._number
+
+    def add_run(self, other: 'Run') -> 'Run':
+        # this assumes that 'other' has a high start number
+        self.word = self.word[:(other.start - self.start)] + other.word
+        self.end = self.start + len(self.word) - 1
+        self._number += other.number
+        
+        return self
 
 class Calibration(UserString):
-    NUMBERS: list[str] = [ 'one', 'two', 'three', 'four','five', 'six', 'seven', 'eight', 'nine' ]
-    MAP: dict[str,str] = { num: str(idx) + num[-1] for idx, num in list(enumerate(NUMBERS, 1)) }
-
+    '''
+    Encapsulates a line of text containing digits and number words,
+    providing methods for translation, and extraction of numbers as
+    digits.
+    '''
+    
     DIGIT_RE   = re.compile(r'\d')
-    NUMBERS_RE = re.compile(f"({'|'.join(NUMBERS)})")
+    NUMBERS_RE = re.compile(f"(?=({'|'.join(NUMBERS)}))")
 
     @property
     def translated(self) -> str:
-        while self.NUMBERS_RE.search(self.data):
-            self.data = self.NUMBERS_RE.sub(lambda m: self.MAP[m.group(1)], self.data)
+        '''
+        Converts number words (e.g., one, two, ..., nine) to 
+        their digit equivalents, factoring in overlapping words 
+        (e.g., twone -> two one -> 21)
+        '''
+        matches = list(self.NUMBERS_RE.finditer(self.data))
+        
+        if not matches:
+            return self
+        
+        matches = list(matches)
+        replacements = []
+
+        while matches:
+            match1 = matches.pop(0)
+            run1 = WordRun(*match1.span(1), word=match1.group(1))
+
+            while matches:
+                match2 = matches.pop(0)
+                run2 = WordRun(*match2.span(1), word=match2.group(1))
+                
+                if run2 not in run1:
+                    matches.insert(0, match2)
+                    break
+                
+                run1.add_run(run2)
+            
+            replacements.append(run1)
+
+        for repl in replacements:
+            self.data = self.data.replace(repl.word, repl.number)
+        
         return self
 
     @property
