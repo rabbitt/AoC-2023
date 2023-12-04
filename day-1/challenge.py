@@ -3,6 +3,7 @@
 import argparse
 import os
 import re
+import sys
 
 from collections import UserString
 from dataclasses import dataclass
@@ -13,6 +14,12 @@ NUMBERS = {
     "four": "4", "five": "5", "six": "6", 
     "seven": "7", "eight": "8", "nine": "9"
 }
+
+DEBUG = os.environ.get('DEBUG') is not None
+
+def debug(*args, **kwargs):
+    if DEBUG:
+        print(*args, **kwargs, file=sys.stderr)
 
 @dataclass
 class WordRun:
@@ -68,32 +75,36 @@ class Calibration(UserString):
         their digit equivalents, factoring in overlapping words 
         (e.g., twone -> two one -> 21)
         '''
-        matches = list(self.NUMBERS_RE.finditer(self.data))
+        number_word_matches = list(self.NUMBERS_RE.finditer(self.data))
         
-        if not matches:
+        if not number_word_matches:
             return self
         
-        matches = list(matches)
-        replacements = []
+        translations = []
 
-        while matches:
-            match1 = matches.pop(0)
+        while number_word_matches:
+            match1 = number_word_matches.pop(0)
             run1 = WordRun(*match1.span(1), word=match1.group(1))
-
-            while matches:
-                match2 = matches.pop(0)
+            debug(f"Run of word [{run1.word}] found")
+            while number_word_matches:
+                match2 = number_word_matches.pop(0)
                 run2 = WordRun(*match2.span(1), word=match2.group(1))
                 
                 if run2 not in run1:
-                    matches.insert(0, match2)
+                    debug(f"  ~ No overlap of next word [{run2.word}] with [{run1.word}]")
+                    number_word_matches.insert(0, match2)
                     break
-                
-                run1.add_run(run2)
+                else:
+                    debug(f"  ! Overlap of next word [{run2.word}] with [{run1.word}]", end="")
+                    run1.add_run(run2)
+                    debug(f" -> [{run1.word}]")
             
-            replacements.append(run1)
+            debug(f"  = Adding translation for [{run1.word}] to [{run1.number}]")
+            
+            translations.append(run1)
 
-        for repl in replacements:
-            self.data = self.data.replace(repl.word, repl.number)
+        for translation in translations:
+            self.data = self.data.replace(translation.word, translation.number, 1)
         
         return self
 
