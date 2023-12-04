@@ -114,6 +114,27 @@ class Vector:
     def distance(self) -> Point:
         return Point(self.b.x - self.a.x, self.b.y - self.a.y)
 
+@dataclass
+class Box:
+    top_left: Point
+    bottom_right: Point
+    
+    @property
+    def top(self) -> int:
+        return self.top_left.y
+    
+    @property
+    def left(self) -> int:
+        return self.top_left.x
+    
+    @property
+    def bottom(self) -> int:
+        return self.bottom_right.y
+    
+    @property
+    def right(self) -> int:
+        return self.bottom_right.x
+
 @dataclass(kw_only=True)
 class RowVector(Vector):
     board: Union['Board',None] = None
@@ -149,51 +170,40 @@ class RowVector(Vector):
         return self.a.is_symbol
 
     @property
+    def box(self) -> Box:
+        x_start = self.a.x if self.a.x == 0 else (self.a.x - 1)
+        x_end   = self.b.x if self.b.x >= (self.board[self.a.y].max-1) else (self.b.x + 1)
+        y_start = self.a.y if self.a.y == 0 else (self.a.y - 1)
+        y_end   = self.a.y if self.a.y >= (len(self.board)-1) else (self.a.y + 1)
+    
+        return Box(Point(x=x_start, y=y_start), Point(x=x_end, y=y_end))
+    
+    @property
     def part_numbers(self) -> bool:
         if not self.is_number:
             return False
         
-        x_start = self.a.x if self.a.x == 0 else self.a.x -1
-        x_end   = self.b.x if self.b.x >= self.board[self.a.y].max-1 else self.b.x+1
-        y_start = self.a.y if self.a.y == 0 else self.a.y - 1
-        y_end   = self.a.y if self.a.y >= (len(self.board)-1) else self.a.y+1
-        
-        # print(f"X({x_start},{x_end}), Y({y_start},{y_end}) -> {self.value}")
-        for row in range(y_start, y_end + 1):
-            for column in range(x_start, x_end + 1):
-                # print(f"Checking: {row},{column}")
+        for row in range(self.box.top, self.box.bottom + 1):
+            for column in range(self.box.left, self.box.right + 1):
                 if DataPoint(x=column, y=row, board=self.board).is_symbol and self.is_number:
-                    # print(f"found one! -> {self.value}")
                     return True
+
         return False
     
     @property
     def gear_ratios(self) -> bool:
-        if not self.is_symbol:
-            return 0
-        
-        if self.is_symbol and self.value != '*':
+        if not self.is_symbol or self.value != '*':
             return 0
         
         gears = set()
         
-        x_start = self.a.x if self.a.x == 0 else self.a.x -1
-        x_end   = self.b.x if self.b.x >= self.board[self.a.y].max-1 else self.b.x+1
-        y_start = self.a.y if self.a.y == 0 else self.a.y - 1
-        y_end   = self.a.y if self.a.y >= (len(self.board)-1) else self.a.y+1
-        
-        # print(f"X({x_start},{x_end}), Y({y_start},{y_end}) -> {self.value}")
-        for row in range(y_start, y_end + 1):
-            for column in range(x_start, x_end + 1):
-                # print(f"Checking: {row},{column}")
+        for row in range(self.box.top, self.box.bottom + 1):
+            for column in range(self.box.left, self.box.right + 1):
                 dp = DataPoint(x=column, y=row, board=self.board)
                 if dp.is_number:
-                    value = self.board[row].get(column).value
-                    gears.add(int(value))
+                    gears.add(int(self.board[row].get(column).value))
        
-        # only counts if we have two parts connect to a star '*'
         if len(gears) == 2:
-            print(f"Got Gears -> {gears}")       
             return reduce(lambda a,b: a*b, gears)
 
         return 0

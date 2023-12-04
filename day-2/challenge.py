@@ -15,7 +15,8 @@ ap = pp.pprint
 
 GAME_RE = re.compile(r'Game (\d+)')
 SET_RE  = re.compile(r'(\d+)\s+(green|blue|red)')
-
+PART_RE = re.compile(r'[:;]\s+'
+                     )
 MAX_RED   = 12
 MAX_GREEN = 13
 MAX_BLUE  = 14
@@ -24,14 +25,14 @@ def dictify(data: list[str]) -> dict[str,str]:
     games: dict[str,str] = {}
     
     for line in data:
-        game, *sets = re.split(r'[:;]\s+', line)
+        game, *sets = PART_RE.split(line)
         games[int(GAME_RE.search(game).group(1))] = [
             { color[1]: int(color[0]) for color in SET_RE.findall(set_data) } for set_data in sets
         ]
         
     return dict(sorted(games.items()))
 
-def evaluate_part(data: list[str]):
+def evaluate(data: list[str]):
     viable_game_ids = []
     game_powers     = []
     
@@ -73,7 +74,7 @@ def main():
     with open(conf.file, 'r') as fd:
         input_data = [line.strip() for line in fd.readlines()]
 
-    evaluate_part(input_data)
+    evaluate(input_data)
 
 if  __name__ == '__main__':
     main()
