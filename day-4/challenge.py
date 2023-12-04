@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 SPACE_RE = re.compile(r'\s+')
+GAME_RE  = re.compile(r'\s*:\s+')
+SEP_RE   = re.compile(r'\s+\|\s+')
 
 pp = pprint.PrettyPrinter(indent=4, width=120)
 ap = pp.pprint
@@ -23,10 +25,13 @@ def build_deck(data: list[str]) -> dict[str,Card]:
     cards = {}
     
     for idx, row in enumerate(data,1):
-        chosen, guesses = row.split(': ')[1].split(' | ')
-        correct = len([x for x in SPACE_RE.split(guesses) if x in SPACE_RE.split(chosen)])
+        winners, guesses = map(lambda x: SPACE_RE.split(x), SEP_RE.split(GAME_RE.split(row)[1]))
+        correct = len([x for x in guesses if x in winners])
+
         # gives us the match counts and values for part 1
-        cards[idx] = Card(id=idx, matches=correct, value=2 ** (correct - 1) if correct > 0 else 0)
+        cards[idx] = Card(id=idx, 
+                          matches=correct, 
+                          value=2 ** (correct - 1) if correct > 0 else 0)
 
     return cards
     
