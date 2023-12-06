@@ -262,7 +262,8 @@ def parse_args() -> dict[str,str]:
     formatter_class = lambda prog: argparse.HelpFormatter(prog, max_help_position=40, width=100)
     parser = argparse.ArgumentParser(formatter_class = formatter_class)
 
-    parser.add_argument('--input-data', '-i', metavar="FILE", dest="file", help='path to input file', type=is_file, required=False, default=Path('sample.txt'))
+    default_file = Path(__file__).parent.joinpath('input.txt')
+    parser.add_argument('--input-data', '-i', metavar="FILE", dest="file", help='path to input file', type=is_file, required=False, default=default_file)
 
     args, _ = parser.parse_known_args()
     
