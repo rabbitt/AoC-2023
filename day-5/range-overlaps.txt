@@ -1,0 +1,64 @@
+-[ Overlapping Range ]-
+
+slice_start = max(self.start, other.start) 
+slice_stop  = min(self.stop, other.stop)
+
+       12345678901234567890  
+self:  |------|             Range(start=1, stop=8, length=7)
+other:   |------|           Range(start=3, stop=10, length=7)
+slice:   |----|             Range(start=3, stop=8, length=5)
+self.start < other.stop and self.stop > other.start
+
+
+       12345678901234567890
+self:      |------|         Range(start=5, stop=12, length=7) 
+other:   |------|           Range(start=3, stop=10, length=7)  
+slice:     |----|           Range(start=5, stop=10, length=5)
+self.start > other.start and self.stop > other.stop
+
+-[ Fully Contained Range ]-
+
+       12345678901234567890
+self:  +------|             Range(start=1, stop=8, length=7)
+other:   +---|              Range(start=3, stop=7, length=4)
+slice:   +---|              Range(start=3, stop=7, length=4)
+self.start < other.start and self.stop > other.stop
+slice = min(self, other)
+
+       12345678901234567890
+self:    |---|              Range(start=3, stop=7, length=5)
+other: |------|             Range(start=1, stop=8, length=8)
+slice:   |---|              Range(start=3, stop=7, length=5)
+self.start > other.start and self.stop < other.stop
+slice = min(self, other)
+
+-[ Touching Range ]-
+
+slice_start = other.start if self.start < other.start else self.start
+slice_stop  = slice_start + 1
+
+       12345678901234567890
+self:  |------|             Range(start=1, stop=8, length=8)
+other:        |------|      Range(start=8, stop=15, length=8)
+slice:        |             Range(start=8, stop=9, length=1)
+self.start < other.stop and self.stop <= other.start
+
+
+       12345678901234567890
+self:         |------|      Range(start=8, stop=15, length=8)
+other: |------|             Range(start=1, stop=8, length=8)
+slice:        |             Range(start=8, stop=9, length=1)
+self.start >= other.stop and self.stop < other.start
+self.start >= other.stop and self.stop > other.start
+
+-[ Non-Overlapping Range ]-
+
+       12345678901234567890
+self:  |------|             Range(start=1, stop=8, length=8)
+other:           |------|   Range(start=11, stop=18, length=8)
+self.start < other.stop and self.stop < other.stop
+
+       12345678901234567890
+self:            |------|   Range(start=11, stop=18, length=8)
+other: |------|             Range(start=1, stop=8, length=8)
+self.start > other.stop and self.stop > other.stop
