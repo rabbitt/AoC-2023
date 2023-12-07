@@ -6,11 +6,6 @@ import os
 import re
 import sys
 
-# dict is gauranteed to use insertion order in 3.7+, so if 
-# we're not at least 3.7, use OrderedDict for dict instead
-if sys.version_info.major >= 3 and sys.version_info.minor < 7:
-    from collections import OrderedDict as dict
-    
 from collections import UserList
 from functools import cached_property
 from dataclasses import dataclass
@@ -269,12 +264,6 @@ class Almanac:
         debug(f"get_location_by_range: search_set: {search_range}")
         return min(search_set)
     
-    def get_location_by_brute_force_range(self, seed_range: Range) -> int:
-        found = []
-        for seed_id in seed_range: # type: ignore
-            found.append(self.get_location_by_seed_id(seed_id))
-        return min(found)
-                
     def load_mapping(self, map_name: str, map_data: list[str]):
         ranges = []
         for line in map_data:
@@ -336,12 +325,6 @@ def evaluate(data: list[str]):
     for seed_range in almanac.seeds_part_2:
         locations.append(almanac.get_location_by_range(seed_range).start)
     print(f"Part 2: lowest location: {min(locations)}")
-
-    locations = []
-    for seed_range in almanac.seeds_part_2:
-        for seed_id in seed_range: # type: ignore
-            locations.append(almanac.get_location_by_seed_id(seed_id))
-    print(f"Part 2: validation : {min(locations)}")
 
 
 def parse_args() -> argparse.Namespace:
