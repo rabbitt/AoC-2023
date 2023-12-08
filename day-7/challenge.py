@@ -37,9 +37,7 @@ RANKS = {
     '6': 11, '5': 7, '4': 5, '3': 3, '2': 2
 }
 
-PLAYER_RE = re.compile('^([AKQJT2-9]{5})\s+(\d+)')
-HAND_RE = re.compile('^([AKQJT2-9]{5})')
-BID_RE  = re.compile('(?:\s+(\d+))$')
+SPACE_RE  = re.compile('\s+')
 
 ENABLE_JOKER = False
 
@@ -396,8 +394,6 @@ class Player:
     
     def __lt__(self, other) -> bool:
         return self.hand.string_comparitor < other.hand.string_comparitor
-
-SPACE_RE = re.compile('\s+')
 
 def parse(data):
     players = []

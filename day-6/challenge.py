@@ -9,12 +9,20 @@ from functools import reduce
 from collections import UserList
 from dataclasses import dataclass
 from pathlib import Path
+from pprint import pprint as pp
 
-DEBUG = os.environ.get('DEBUG') is not None
+DEBUG = int(os.environ.get('DEBUG', -1) if os.environ.get('DEBUG','').strip() else -1)
 
 def debug(*args, **kwargs):
-    if DEBUG:
+    level = kwargs.pop('level') if 'level' in kwargs else 0
+    if DEBUG >= level:
         print(*args, **kwargs, file=sys.stderr)
+
+debug1 = lambda *args, **kwargs: debug(*args, level=1, **kwargs)
+debug2 = lambda *args, **kwargs: debug(*args, level=2, **kwargs)
+debug3 = lambda *args, **kwargs: debug(*args, level=3, **kwargs)
+debug4 = lambda *args, **kwargs: debug(*args, level=4, **kwargs)
+debug5 = lambda *args, **kwargs: debug(*args, level=5, **kwargs)
 
 NUMBERS_RE = re.compile('\d+')
 

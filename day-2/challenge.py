@@ -13,6 +13,19 @@ from pathlib import Path
 pp = pprint.PrettyPrinter(indent=4, width=120)
 ap = pp.pprint
 
+DEBUG = int(os.environ.get('DEBUG', -1) if os.environ.get('DEBUG','').strip() else -1)
+
+def debug(*args, **kwargs):
+    level = kwargs.pop('level') if 'level' in kwargs else 0
+    if DEBUG >= level:
+        print(*args, **kwargs, file=sys.stderr)
+
+debug1 = lambda *args, **kwargs: debug(*args, level=1, **kwargs)
+debug2 = lambda *args, **kwargs: debug(*args, level=2, **kwargs)
+debug3 = lambda *args, **kwargs: debug(*args, level=3, **kwargs)
+debug4 = lambda *args, **kwargs: debug(*args, level=4, **kwargs)
+debug5 = lambda *args, **kwargs: debug(*args, level=5, **kwargs)
+
 GAME_RE = re.compile(r'Game (\d+)')
 SET_RE  = re.compile(r'(\d+)\s+(green|blue|red)')
 PART_RE = re.compile(r'[:;]\s+'

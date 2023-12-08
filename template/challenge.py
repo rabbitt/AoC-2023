@@ -7,14 +7,30 @@ import sys
 
 from dataclasses import dataclass
 from pathlib import Path
+from pprint import pprint as pp
 
-DEBUG = os.environ.get('DEBUG') is not None
+DEBUG = int(os.environ.get('DEBUG', -1) if os.environ.get('DEBUG','').strip() else -1)
 
 def debug(*args, **kwargs):
-    if DEBUG:
+    level = kwargs.pop('level') if 'level' in kwargs else 0
+    if DEBUG >= level:
         print(*args, **kwargs, file=sys.stderr)
 
+debug1 = lambda *args, **kwargs: debug(*args, level=1, **kwargs)
+debug2 = lambda *args, **kwargs: debug(*args, level=2, **kwargs)
+debug3 = lambda *args, **kwargs: debug(*args, level=3, **kwargs)
+debug4 = lambda *args, **kwargs: debug(*args, level=4, **kwargs)
+debug5 = lambda *args, **kwargs: debug(*args, level=5, **kwargs)
+
+SPACE_RE  = re.compile('\s+')
+
+def parse(data: list[str]) -> list[tuple]:
+    return map(lambda line: SPACE_RE.split(line), data)
+
 def evaluate(data: list[str]):
+    parsed_data = parse(data)
+    debug1(parsed_data)
+    
     part_1_result: list[int] = [ line for line in data ]
     part_2_result: list[int] = [ line for line in data ]
 

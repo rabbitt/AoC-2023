@@ -15,11 +15,18 @@ NUMBERS = {
     "seven": "7", "eight": "8", "nine": "9"
 }
 
-DEBUG = os.environ.get('DEBUG') is not None
+DEBUG = int(os.environ.get('DEBUG', -1) if os.environ.get('DEBUG','').strip() else -1)
 
 def debug(*args, **kwargs):
-    if DEBUG:
+    level = kwargs.pop('level') if 'level' in kwargs else 0
+    if DEBUG >= level:
         print(*args, **kwargs, file=sys.stderr)
+
+debug1 = lambda *args, **kwargs: debug(*args, level=1, **kwargs)
+debug2 = lambda *args, **kwargs: debug(*args, level=2, **kwargs)
+debug3 = lambda *args, **kwargs: debug(*args, level=3, **kwargs)
+debug4 = lambda *args, **kwargs: debug(*args, level=4, **kwargs)
+debug5 = lambda *args, **kwargs: debug(*args, level=5, **kwargs)
 
 @dataclass
 class WordRun:
@@ -85,21 +92,21 @@ class Calibration(UserString):
         while number_word_matches:
             match1 = number_word_matches.pop(0)
             run1 = WordRun(*match1.span(1), word=match1.group(1))
-            debug(f"Run of word [{run1.word}] found")
+            debug1(f"Run of word [{run1.word}] found")
             while number_word_matches:
                 match2 = number_word_matches.pop(0)
                 run2 = WordRun(*match2.span(1), word=match2.group(1))
                 
                 if run2 not in run1:
-                    debug(f"  ~ No overlap of next word [{run2.word}] with [{run1.word}]")
+                    debug2(f"  ~ No overlap of next word [{run2.word}] with [{run1.word}]")
                     number_word_matches.insert(0, match2)
                     break
                 else:
-                    debug(f"  ! Overlap of next word [{run2.word}] with [{run1.word}]", end="")
+                    debug2(f"  ! Overlap of next word [{run2.word}] with [{run1.word}]", end="")
                     run1.add_run(run2)
-                    debug(f" -> [{run1.word}]")
+                    debug2(f" -> [{run1.word}]")
             
-            debug(f"  = Adding translation for [{run1.word}] to [{run1.number}]")
+            debug1(f"  = Adding translation for [{run1.word}] to [{run1.number}]")
             
             translations.append(run1)
 
