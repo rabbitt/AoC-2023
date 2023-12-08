@@ -41,7 +41,7 @@ PLAYER_RE = re.compile('^([AKQJT2-9]{5})\s+(\d+)')
 HAND_RE = re.compile('^([AKQJT2-9]{5})')
 BID_RE  = re.compile('(?:\s+(\d+))$')
 
-ALTERNATE_RULES = False
+ENABLE_JOKER = False
 
 def exclude_rank(items: Union[str,list[str]]) -> list:
     if isinstance(items, str):
@@ -165,7 +165,7 @@ class LookupEntry:
     
     @property
     def kind(self) -> HandTypes:
-        if ALTERNATE_RULES:
+        if ENABLE_JOKER:
             if not self._hand:
                 return self._kind
             
@@ -275,7 +275,7 @@ class Card(metaclass=SingletonMeta):
 
     @property
     def sort_rank(self) -> int:
-        if ALTERNATE_RULES and self is Card('J'):
+        if ENABLE_JOKER and self is Card('J'):
             return 1
         else:
             return self._value
@@ -391,13 +391,13 @@ def parse(data):
     return players
 
 def evaluate(data: list[str]):
-    global ALTERNATE_RULES 
+    global ENABLE_JOKER 
     players = list(enumerate(sorted(parse(data), key=lambda p: p.hand, reverse=False), 1))
     bid_totals = list(map(lambda x: x[0] * x[1].bid, players))
     debug2(players)
     print(f"Part 1: result: {sum(bid_totals)}")
     
-    ALTERNATE_RULES = True
+    ENABLE_JOKER = True
     players = list(enumerate(sorted(parse(data), key=lambda p: p.hand, reverse=False), 1))
     bid_totals = list(map(lambda x: x[0] * x[1].bid, players))
     debug2(players)
