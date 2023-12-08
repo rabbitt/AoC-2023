@@ -5,6 +5,7 @@ __pycache__/
 
 # C extensions
 *.so
+*/input2.txt
 
 # Distribution / packaging
 .Python
