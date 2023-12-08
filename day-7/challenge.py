@@ -15,7 +15,7 @@ from threading import Lock
 from typing import Union, Hashable
 from enum import Enum
 
-DEBUG = int(os.environ.get('DEBUG', -1) if os.environ.get('DEBUG').strip() else -1)
+DEBUG = int(os.environ.get('DEBUG', -1) if os.environ.get('DEBUG','').strip() else -1)
 
 def debug(*args, **kwargs):
     level = kwargs.pop('level') if 'level' in kwargs else 0
@@ -123,6 +123,8 @@ class HandTypes(Enum):
         return HandTypes(new_value if new_value <= HandTypes.max() else HandTypes.max())
 
 class LookupEntry:
+    # Maps one ranking to another depending on the joker count in the hand
+    # this is basically: { joker_count: { from_hand_type: to_hand_type } }
     __KIND_MAPPINGS: dict[int,dict[HandTypes,HandTypes]] = {
         0: { },
         1: {
@@ -144,7 +146,8 @@ class LookupEntry:
         4: {
             HandTypes.FOUR_OF_A_KIND: HandTypes.FIVE_OF_A_KIND
         },
-        5: { }
+        # If there are five jokers, we have a five of a kind already, so keep it
+        5: { HandTypes.FIVE_OF_A_KIND: HandTypes.FIVE_OF_A_KIND }
     }
     
     def __init__(self, hand: Union['Hand',None] = None, rank: int = sys.maxsize, kind: HandTypes = HandTypes.INDETERMINATE):
@@ -320,6 +323,17 @@ class Hand:
     def __hash__(self) -> int:
         return self._index
     
+    @property
+    def string_comparitor(self) -> str:
+        kind = LookupTable()[self.index].kind
+
+        if ENABLE_JOKER:
+            translation = str.maketrans('TJQKA', 'A0BCD')
+        else:
+            translation = str.maketrans('TJQKA', 'ABCDE')
+
+        return f"{kind.value}{self._visual.translate(translation)}"
+    
     def __compare_hand__(self, other: 'Hand') -> int:
         if not isinstance(other, Hand):
             return NotImplemented
@@ -377,6 +391,12 @@ class Player:
     def __repr__(self) -> str:
         return f'{self.hand.visual}'
 
+    def __eq__(self, other) -> bool:
+        return self.hand.string_comparitor == other.hand.string_comparitor
+    
+    def __lt__(self, other) -> bool:
+        return self.hand.string_comparitor < other.hand.string_comparitor
+
 SPACE_RE = re.compile('\s+')
 
 def parse(data):
@@ -392,13 +412,13 @@ def parse(data):
 
 def evaluate(data: list[str]):
     global ENABLE_JOKER 
-    players = list(enumerate(sorted(parse(data), key=lambda p: p.hand, reverse=False), 1))
+    players = list(enumerate(sorted(parse(data), reverse=False), 1))
     bid_totals = list(map(lambda x: x[0] * x[1].bid, players))
     debug2(players)
     print(f"Part 1: result: {sum(bid_totals)}")
     
     ENABLE_JOKER = True
-    players = list(enumerate(sorted(parse(data), key=lambda p: p.hand, reverse=False), 1))
+    players = list(enumerate(sorted(parse(data), reverse=False), 1))
     bid_totals = list(map(lambda x: x[0] * x[1].bid, players))
     debug2(players)
     print(f"Part 2: result: {sum(bid_totals)}")
