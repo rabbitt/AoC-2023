@@ -353,11 +353,7 @@ def parse_args() -> argparse.Namespace:
 
 def main():
     conf = parse_args()
-    
-    with open(conf.file, 'r') as fd:
-        input_data = [line.strip() for line in fd.readlines()]
-
-    evaluate(input_data)
+    evaluate(Path(conf.file).read_text().splitlines())
 
 if  __name__ == '__main__':
     main()

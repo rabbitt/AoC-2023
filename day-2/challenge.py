@@ -2,16 +2,11 @@
 
 import argparse
 import os
-import pprint
 import re
 import sys
 
-from math import inf as Infinity
-from typing import Any
+from dataclasses import dataclass
 from pathlib import Path
-
-pp = pprint.PrettyPrinter(indent=4, width=120)
-ap = pp.pprint
 
 DEBUG = int(os.environ.get('DEBUG', -1) if os.environ.get('DEBUG','').strip() else -1)
 
@@ -28,43 +23,64 @@ debug5 = lambda *args, **kwargs: debug(*args, level=5, **kwargs)
 
 GAME_RE = re.compile(r'Game (\d+)')
 SET_RE  = re.compile(r'(\d+)\s+(green|blue|red)')
-PART_RE = re.compile(r'[:;]\s+'
-                     )
+PART_RE = re.compile(r'[:;]\s+')
+
 MAX_RED   = 12
 MAX_GREEN = 13
 MAX_BLUE  = 14
 
-def dictify(data: list[str]) -> dict[str,str]:
-    games: dict[str,str] = {}
+@dataclass
+class GameSet:
+    red: int = 0
+    green: int = 0
+    blue: int = 0
+
+@dataclass
+class Game:
+    id: int
+    sets: list[GameSet]
+
+def parse_lines(data: list[str]) -> list[Game]:
+    games: list[Game] = []
     
     for line in data:
         game, *sets = PART_RE.split(line)
-        games[int(GAME_RE.search(game).group(1))] = [
-            { color[1]: int(color[0]) for color in SET_RE.findall(set_data) } for set_data in sets
-        ]
         
-    return dict(sorted(games.items()))
+        if not GAME_RE.search(game):
+            raise ValueError(f"Couldn't extract game id from game component: {game}")
 
-def evaluate(data: list[str]):
+        game_id = int(GAME_RE.search(game).group(1)) # type: ignore
+
+        games.append(
+            Game(id=game_id, sets=[
+                GameSet(**{ 
+                    color: int(count) for count, color in SET_RE.findall(set_data) 
+                }) for set_data in sets
+            ])
+        )
+        
+    return sorted(games, key=lambda x: x.id)
+
+def evaluate(lines: list[str]):
     viable_game_ids = []
     game_powers     = []
-    
-    for game_id, color_sets in dictify(data).items():
-        if all((color_set.get('red', 0) <= MAX_RED and 
-                color_set.get('green', 0) <= MAX_GREEN and 
-                color_set.get('blue', 0) <= MAX_BLUE) for color_set in color_sets):
-            viable_game_ids.append(int(game_id))
 
-        red = max(map(lambda x: x.get('red', 0), color_sets))
-        green = max(map(lambda x: x.get('green', 0), color_sets))
-        blue = max(map(lambda x: x.get('blue', 0), color_sets))
+    for game in parse_lines(lines):
+        if all((game_set.red <= MAX_RED and 
+                game_set.green <= MAX_GREEN and 
+                game_set.blue <= MAX_BLUE) for game_set in game.sets):
+            viable_game_ids.append(int(game.id))
+
+        red = max(map(lambda s: s.red, game.sets))
+        green = max(map(lambda s: s.green, game.sets))
+        blue = max(map(lambda s: s.blue, game.sets))
 
         game_powers.append(red * green * blue)
 
     print(f"Part 1: Sum of viable games: {sum(viable_game_ids)}")
     print(f"Part 2: Sum of game Powers: {sum(game_powers)}")
 
-def parse_args() -> dict[str,str]:
+def parse_args() -> argparse.Namespace:
     def is_file(path):
         path = Path(path)
         if path.is_file() and path.exists():
@@ -84,11 +100,7 @@ def parse_args() -> dict[str,str]:
 
 def main():
     conf = parse_args()
-    
-    with open(conf.file, 'r') as fd:
-        input_data = [line.strip() for line in fd.readlines()]
-
-    evaluate(input_data)
+    evaluate(Path(conf.file).read_text().splitlines())
 
 if  __name__ == '__main__':
     main()

@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
 import argparse
+import os
 import re
 
 from dataclasses import dataclass
 from pathlib import Path
-from pprint import pprint as pp
 
 DEBUG = int(os.environ.get('DEBUG', -1) if os.environ.get('DEBUG','').strip() else -1)
 
@@ -25,13 +25,13 @@ GAME_RE  = re.compile(r'\s*:\s+')
 SEP_RE   = re.compile(r'\s+\|\s+')
 
 @dataclass(eq=False)
-class Card:
+class ScratchCard:
     id: int
     matches: int = 0
     value: int = 0
     tally: int = 1
 
-def build_deck(data: list[str]) -> dict[str,Card]:
+def build_deck(data: list[str]) -> dict[int,ScratchCard]:
     cards = {}
     
     for idx, row in enumerate(data,1):
@@ -39,7 +39,7 @@ def build_deck(data: list[str]) -> dict[str,Card]:
         correct = len([x for x in guesses if x in winners])
 
         # gives us the match counts and values for part 1
-        cards[idx] = Card(id=idx, 
+        cards[idx] = ScratchCard(id=idx, 
                           matches=correct, 
                           value=2 ** (correct - 1) if correct > 0 else 0)
 
@@ -56,10 +56,10 @@ def evaluate(data: list[str]):
     point_total = sum(map(lambda c: c.value, cards.values()))
     card_total  = sum([c.tally for c in cards.values()])
 
-    print(f"Part 1: Sum of points: {point_total}")
-    print(f"Part 2: Sum of cards won: {card_total}")
+    print(f"Part 1: Sum of Scratch Card points: {point_total}")
+    print(f"Part 2: Sum of Scratch Cards won: {card_total}")
 
-def parse_args() -> dict[str,str]:
+def parse_args() -> argparse.Namespace:
     def is_file(path):
         path = Path(path)
         if path.is_file() and path.exists():
@@ -79,11 +79,7 @@ def parse_args() -> dict[str,str]:
 
 def main():
     conf = parse_args()
-    
-    with open(conf.file, 'r') as fd:
-        input_data = [line.strip() for line in fd.readlines()]
-
-    evaluate(input_data)
+    evaluate(Path(conf.file).read_text().splitlines())
 
 if  __name__ == '__main__':
     main()

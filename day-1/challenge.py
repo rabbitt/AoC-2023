@@ -43,7 +43,7 @@ class WordRun:
     def __post_init__(self):
         self._number = NUMBERS[self.word]
 
-    def overlaps(self, other: 'Run') -> bool:
+    def overlaps(self, other: 'WordRun') -> bool:
         if self.start <= other.start:
             if self.end >= other.start:
                 return True
@@ -57,7 +57,7 @@ class WordRun:
     def number(self) -> str:
         return self._number
 
-    def add_run(self, other: 'Run') -> 'Run':
+    def add_run(self, other: 'WordRun') -> 'WordRun':
         # this assumes that 'other' has a high start number
         self.word = self.word[:(other.start - self.start)] + other.word
         self.end = self.start + len(self.word) - 1
@@ -76,7 +76,7 @@ class Calibration(UserString):
     NUMBERS_RE = re.compile(f"(?=({'|'.join(NUMBERS)}))")
 
     @property
-    def translated(self) -> str:
+    def translated(self) -> 'Calibration':
         '''
         Converts number words (e.g., one, two, ..., nine) to 
         their digit equivalents, factoring in overlapping words 
@@ -124,19 +124,20 @@ class Calibration(UserString):
         will likewise be the same.
         '''
         if self.DIGIT_RE.search(self.data) is not None:
-            first = self.DIGIT_RE.search(self.data)[0]
-            last  = self.DIGIT_RE.search(self.data[::-1])[0]
+            first = self.DIGIT_RE.search(self.data)[0] # type: ignore
+            last  = self.DIGIT_RE.search(self.data[::-1])[0] # type: ignore
             return int(first + last)
         return 0
 
-def evaluate(data: list[str]):
+def evaluate(data: list[Calibration]):
+    debug1(data)
     part_1_calibrations: list[int] = [ line.as_number for line in data ]
     part_2_calibrations: list[int] = [ line.translated.as_number for line in data ]
 
     print(f"Part 1: Sum of calibrations: {sum(part_1_calibrations)}")
     print(f"Part 2: Sum of calibrations: {sum(part_2_calibrations)}")
 
-def parse_args() -> dict[str,str]:
+def parse_args() -> argparse.Namespace:
     def is_file(path):
         path = Path(path)
         if path.is_file() and path.exists():
@@ -156,11 +157,7 @@ def parse_args() -> dict[str,str]:
 
 def main():
     conf = parse_args()
-    
-    with open(conf.file, 'r') as fd:
-        input_data = [Calibration(line.strip()) for line in fd.readlines()]
-
-    evaluate(input_data)
+    evaluate(list(map(Calibration, Path(conf.file).read_text().splitlines())))
 
 if  __name__ == '__main__':
     main()

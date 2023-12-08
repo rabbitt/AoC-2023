@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from functools import reduce
 from math import inf as Infinity
 from pathlib import Path
-from typing import Any, Union
+from typing import Any, Union, SupportsIndex, Iterable, Iterator
 
 pp = pprint.PrettyPrinter(indent=4, width=120)
 ap = pp.pprint
@@ -34,10 +34,32 @@ NUMBER_RE = re.compile(r'\d+')
 
 SBoard = list[list[str]]
 
-@dataclass(kw_only=True)
+@dataclass
 class Point:
-    x: int = field(default=0)
-    y: int = field(default=0)
+    x: int = 0
+    y: int = 0
+
+@dataclass
+class Box:
+    top_left: Point
+    bottom_right: Point
+    
+    @property
+    def top(self) -> int:
+        return self.top_left.y
+    
+    @property
+    def left(self) -> int:
+        return self.top_left.x
+    
+    @property
+    def bottom(self) -> int:
+        return self.bottom_right.y
+    
+    @property
+    def right(self) -> int:
+        return self.bottom_right.x
+
 
 @dataclass(kw_only=True)
 class DataPoint(Point):
@@ -68,47 +90,8 @@ class DataPoint(Point):
         else:
             return 'symbol'
 
-class RowVectors(UserList):
-    def __getitem__(self, index) -> Union['RowVector',None]:
-        return self.data[index]
-    
-    def __len__(self) -> int:
-        return len(self.data)
-
-    def __repr__(self) -> str:
-        return f'RVectors{self.data.__repr__()}'
-
-    def get(self, index) -> 'RowVector':
-        if index == -1:
-            return self.data[-1]
-        else:
-            for item in self.data:
-                if index in item: 
-                    return item
-
-        raise IndexError(f'{index} not found; expected 0 < {index} < {self.max}')
-    
-    @property
-    def first(self) -> 'RowVector':
-        return self.data[0]
-            
-    @property
-    def last(self) -> 'RowVector':
-        return self.data[-1]
-        
-    @property 
-    def min(self) -> int:
-        return self.data[0].a.x
-
-    @property
-    def max(self) -> int:
-        return self.data[-1].b.x
-    
-    def __str__(self) -> str:
-        return ''.join(map(lambda v: str(v), self))
-    
 @dataclass(kw_only=True)
-class Vector:
+class Line:
     a: Point
     b: Point
     
@@ -127,37 +110,14 @@ class Vector:
     def distance(self) -> Point:
         return Point(self.b.x - self.a.x, self.b.y - self.a.y)
 
-@dataclass
-class Box:
-    top_left: Point
-    bottom_right: Point
-    
-    @property
-    def top(self) -> int:
-        return self.top_left.y
-    
-    @property
-    def left(self) -> int:
-        return self.top_left.x
-    
-    @property
-    def bottom(self) -> int:
-        return self.bottom_right.y
-    
-    @property
-    def right(self) -> int:
-        return self.bottom_right.x
-
 @dataclass(kw_only=True)
-class RowVector(Vector):
-    board: Union['Board',None] = None
+class Segment(Line):
+    a: DataPoint
+    b: DataPoint
+    board: 'Board'
     
-    @classmethod
-    def create(cls: 'RowVector', board: 'Board') -> 'RowVector':
-        return cls(DataPoint(board=board), DataPoint(board=board))
-        
     def __repr__(self) -> str:
-        return f'RowVector( range=(({self.a.x},{self.a.y}), ({self.b.x},{self.b.y})) value={self.value} )'
+        return f'Segment( range=(({self.a.x},{self.a.y}), ({self.b.x},{self.b.y})) value={self.value} )'
     
     def __str__(self) -> str:
         return self.value
@@ -204,7 +164,7 @@ class RowVector(Vector):
         return False
     
     @property
-    def gear_ratios(self) -> bool:
+    def gear_ratios(self) -> int:
         if not self.is_symbol or self.value != '*':
             return 0
         
@@ -221,27 +181,74 @@ class RowVector(Vector):
 
         return 0
 
+class Segments(UserList):
+    def __setitem__(self, index: SupportsIndex, value: Segment): # type: ignore
+        self.data[index] = value
+        
+    def __getitem__(self, index: SupportsIndex, /) -> Segment: # type: ignore
+        return self.data[index]
+    
+    def __len__(self) -> int:
+        return len(self.data)
+
+    def __repr__(self) -> str:
+        return f'RLines{self.data.__repr__()}'
+
+    def get(self, index) -> 'Segment':
+        if index == -1:
+            return self.data[-1]
+        else:
+            for item in self.data:
+                if index in item: 
+                    return item
+
+        raise IndexError(f'{index} not found; expected 0 < {index} < {self.max}')
+    
+    @property
+    def first(self) -> 'Segment':
+        return self.data[0]
+            
+    @property
+    def last(self) -> 'Segment':
+        return self.data[-1]
+        
+    @property 
+    def min(self) -> int:
+        return self.data[0].a.x
+
+    @property
+    def max(self) -> int:
+        return self.data[-1].b.x
+    
+    def __str__(self) -> str:
+        return ''.join(map(lambda v: str(v), self))
+    
+
 class Board:
-    def __init__(self, data):
-        self._board = []        
-        self._data  = data
+    def __init__(self, data: list[list[str]]):
+        self._board: list[Segments] = []        
+        self._data: list[list[str]]  = data
         
         for y, row in enumerate(data):
-            self._board.insert(y, RowVectors())
+            self._board.insert(y, Segments())
 
             for x, column in enumerate(row):
                 dp = DataPoint(x=x, y=y, board=self)
                 
                 if x <= 0:
-                    self._board[y].append(RowVector(a=dp, b=dp, board=self))
+                    self._board[y].append(Segment(a=dp, b=dp, board=self))
                 elif self._board[y].last.type == dp.type:
                     self._board[y].last.b = dp
                 else:
-                    self._board[y].append(RowVector(a=dp, b=dp, board=self))
+                    self._board[y].append(Segment(a=dp, b=dp, board=self))
+    
+    def __iter__(self) -> Iterator:
+        return iter(self._board)
     
     def get(self, start: Point, end: Union[Point,None] = None):
         if end is None:
             end = start
+
         return ''.join(self._data[start.y][start.x:end.x+1])
     
     def __len__(self) -> int:
@@ -251,8 +258,8 @@ class Board:
         return self._board[index]
     
 
-def evaluate(board: list[list[str]]):
-    board = Board(board)
+def evaluate(lines: list[list[str]]):
+    board = Board(lines)
 
     part_numbers = [int(item.value) for row in board for item in row if item.part_numbers]
     gear_ratios = [item.gear_ratios for row in board for item in row]
@@ -264,7 +271,7 @@ def evaluate(board: list[list[str]]):
     print(f"Part 1: Sum of viable numbers: {sum(part_numbers)}")
     print(f"Part 2: Sum of game Powers: {sum(gear_ratios)}")
 
-def parse_args() -> dict[str,str]:
+def parse_args() -> argparse.Namespace:
     def is_file(path):
         path = Path(path)
         if path.is_file() and path.exists():
@@ -284,11 +291,7 @@ def parse_args() -> dict[str,str]:
 
 def main():
     conf = parse_args()
-    
-    with open(conf.file, 'r') as fd:
-        input_data = [list(line.strip()) for line in fd.readlines()]
-
-    evaluate(input_data)
+    evaluate(list(map(list, Path(conf.file).read_text().splitlines())))
 
 if  __name__ == '__main__':
     main()

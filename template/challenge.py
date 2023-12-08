@@ -24,20 +24,22 @@ debug5 = lambda *args, **kwargs: debug(*args, level=5, **kwargs)
 
 SPACE_RE  = re.compile('\s+')
 
-def parse(data: list[str]) -> list[tuple]:
-    return map(lambda line: SPACE_RE.split(line), data)
+def parse_lines(lines: list[str]) -> None:
+    # return list(map(SPACE_RE.split, lines))
+    pass
 
-def evaluate(data: list[str]):
-    parsed_data = parse(data)
-    debug1(parsed_data)
+def evaluate(lines: list[str]):
+    # data = parse_lines(lines)
+    # debug1(data)
     
-    part_1_result: list[int] = [ line for line in data ]
-    part_2_result: list[int] = [ line for line in data ]
+    # part_1_result: list[int] = [ line for line in data ]
+    # part_2_result: list[int] = [ line for line in data ]
 
-    print(f"Part 1: result: {sum(part_1_result)}")
-    print(f"Part 2: result: {sum(part_2_result)}")
+    # print(f"Part 1: result: {sum(part_1_result)}")
+    # print(f"Part 2: result: {sum(part_2_result)}")
+    pass
 
-def parse_args() -> dict[str,str]:
+def parse_args() -> argparse.Namespace:
     def is_file(path):
         path = Path(path)
         if path.is_file() and path.exists():
@@ -57,11 +59,7 @@ def parse_args() -> dict[str,str]:
 
 def main():
     conf = parse_args()
-    
-    with open(conf.file, 'r') as fd:
-        input_data = [line.strip() for line in fd.readlines()]
-
-    evaluate(input_data)
+    evaluate(Path(conf.file).read_text().splitlines())
 
 if  __name__ == '__main__':
     main()

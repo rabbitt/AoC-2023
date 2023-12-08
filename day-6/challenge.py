@@ -100,7 +100,7 @@ def evaluate(data: list[str]):
     print(f"Part 1: result: {leaderboard_part_1.margin_of_error}")
     print(f"Part 2: result: {leaderboard_part_2.margin_of_error}")
 
-def parse_args() -> dict[str,str]:
+def parse_args() -> argparse.Namespace:
     def is_file(path):
         path = Path(path)
         if path.is_file() and path.exists():
@@ -120,11 +120,7 @@ def parse_args() -> dict[str,str]:
 
 def main():
     conf = parse_args()
-    
-    with open(conf.file, 'r') as fd:
-        input_data = [line.strip() for line in fd.readlines()]
-
-    evaluate(input_data)
+    evaluate(Path(conf.file).read_text().splitlines())
 
 if  __name__ == '__main__':
     main()

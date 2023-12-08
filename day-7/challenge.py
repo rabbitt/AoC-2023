@@ -395,10 +395,10 @@ class Player:
     def __lt__(self, other) -> bool:
         return self.hand.string_comparitor < other.hand.string_comparitor
 
-def parse(data):
+def parse_lines(lines: list[str]):
     players = []
 
-    for line in data:
+    for line in lines:
         if not line.strip():
             continue
         hand, bid = SPACE_RE.split(line)
@@ -406,15 +406,15 @@ def parse(data):
     
     return players
 
-def evaluate(data: list[str]):
+def evaluate(lines: list[str]):
     global ENABLE_JOKER 
-    players = list(enumerate(sorted(parse(data), reverse=False), 1))
+    players = list(enumerate(sorted(parse_lines(lines), reverse=False), 1))
     bid_totals = list(map(lambda x: x[0] * x[1].bid, players))
     debug2(players)
     print(f"Part 1: result: {sum(bid_totals)}")
     
     ENABLE_JOKER = True
-    players = list(enumerate(sorted(parse(data), reverse=False), 1))
+    players = list(enumerate(sorted(parse_lines(lines), reverse=False), 1))
     bid_totals = list(map(lambda x: x[0] * x[1].bid, players))
     debug2(players)
     print(f"Part 2: result: {sum(bid_totals)}")
@@ -440,11 +440,7 @@ def parse_args() -> argparse.Namespace:
 
 def main():
     conf = parse_args()
-    
-    with open(conf.file, 'r') as fd:
-        input_data = [line.strip() for line in fd.readlines()]
-
-    evaluate(input_data)
+    evaluate(Path(conf.file).read_text().splitlines())
 
 if  __name__ == '__main__':
     main()
