@@ -8,6 +8,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from pprint import pprint as pp
+from typing import Optional, Union
 
 DEBUG = int(os.environ.get('DEBUG', -1) if os.environ.get('DEBUG','').strip() else -1)
 
@@ -59,7 +60,7 @@ def parse_args() -> argparse.Namespace:
 
 def main():
     conf = parse_args()
-    evaluate(Path(conf.file).read_text().splitlines())
+    evaluate(Path(conf.file).read_text().strip().splitlines())
 
 if  __name__ == '__main__':
     main()
