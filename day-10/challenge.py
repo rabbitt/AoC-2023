@@ -106,19 +106,19 @@ WEST  = Point(-1, 0)
 
 class Direction(Point):
     @classmethod
-    def north(self) -> 'Direction':
+    def north(cls) -> 'Direction':
         return Direction(0, -1)
     
     @classmethod
-    def south(self) -> 'Direction':
+    def south(cls) -> 'Direction':
         return Direction(0, 1)
     
     @classmethod
-    def west(self) -> 'Direction':
+    def west(cls) -> 'Direction':
         return Direction(-1, 0)
     
     @classmethod
-    def east(self) -> 'Direction':
+    def east(cls) -> 'Direction':
         return Direction(1, 0)
     
     @cached_property 
@@ -147,7 +147,7 @@ class Direction(Point):
             return frozenset()
     
     @cached_property
-    def opposite(self) -> Optional['Direction']:
+    def opposite(self) -> 'Direction':
         if self.is_east:
             return Direction.west()
         elif self.is_west:
@@ -157,7 +157,7 @@ class Direction(Point):
         elif self.is_south:
             return Direction.north()
         else:
-            return None
+            raise ValueError(f'Unable to determine oposite direction from {self}')
     
     @cached_property
     def other_sides(self) -> frozenset['Direction']:
