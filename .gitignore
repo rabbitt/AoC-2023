@@ -5,7 +5,10 @@ __pycache__/
 
 # C extensions
 *.so
+
+# samples / alternative inputs
 */input2.txt
+*/sample2.txt
 
 # Distribution / packaging
 .Python
